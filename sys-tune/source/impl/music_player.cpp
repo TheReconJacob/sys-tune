@@ -462,32 +462,45 @@ namespace tune::impl {
     }
 
     void PmdmntThreadFunc(void *ptr) {
-        // Load and apply the autoplay setting from config
         bool autoplay_enabled = config::get_autoplay_enabled();
-        g_should_pause = !autoplay_enabled;  // Set initial pause state based on autoplay setting
+        bool whitelist_mode = config::get_whitelist_mode();
+        g_should_pause = !autoplay_enabled;
 
         while (g_should_run) {
             u64 pid{}, new_tid{};
             if (pm::PollCurrentPidTid(&pid, &new_tid)) {
-                // check if title is blacklisted
-                g_close_audren = config::get_title_blacklist(new_tid);
-
+                // Always initialize these to safe defaults
+                g_close_audren = false;
+                g_should_pause = true;
                 g_title_volume = 1.f;
+                g_use_title_volume = false;
 
-                if (config::has_title_volume(new_tid)) {
-                    g_use_title_volume = true;
-                    SetTitleVolume(std::clamp(config::get_title_volume(new_tid), 0.f, VOLUME_MAX));
-                }
-
-                // Only check title-specific settings if autoplay is enabled
-                if (autoplay_enabled) {
-                    if (config::has_title_enabled(new_tid)) {
-                        g_should_pause = !config::get_title_enabled(new_tid);
+                if (new_tid != 0) {  // Only process if we have a valid title ID
+                    if (whitelist_mode) {
+                        // In whitelist mode, close audio unless explicitly whitelisted
+                        bool is_whitelisted = config::get_title_whitelist(new_tid);
+                        g_close_audren = !is_whitelisted;
+                        g_should_pause = !is_whitelisted;
                     } else {
-                        g_should_pause = !config::get_title_enabled_default();
+                        // In blacklist mode (default), only close if blacklisted
+                        bool is_blacklisted = config::get_title_blacklist(new_tid);
+                        g_close_audren = is_blacklisted;
+                        
+                        // Check title-specific settings only if autoplay is enabled
+                        if (autoplay_enabled) {
+                            if (config::has_title_enabled(new_tid)) {
+                                g_should_pause = !config::get_title_enabled(new_tid);
+                            } else {
+                                g_should_pause = !config::get_title_enabled_default();
+                            }
+                        }
                     }
-                } else {
-                    g_should_pause = true;  // Always pause if autoplay is disabled
+
+                    // Handle title-specific volume settings
+                    if (config::has_title_volume(new_tid)) {
+                        g_use_title_volume = true;
+                        g_title_volume = std::clamp(config::get_title_volume(new_tid), 0.f, VOLUME_MAX);
+                    }
                 }
             }
             svcSleepThread(100'000'000ul);
@@ -797,6 +810,9 @@ namespace tune::impl {
     }
 
 }
+
+
+
 
 
 

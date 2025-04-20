@@ -9,6 +9,7 @@
 namespace {
     const char CONFIG_PATH[] = "/config/sys-tune/config.ini";
     const char BLACKLIST_PATH[] = "/config/sys-tune/blacklist.ini";
+    const char WHITELIST_PATH[] = "/config/sys-tune/whitelist.ini";
     const char PLAYLIST_PATH[] = "/config/sys-tune/playlist.txt";
     
     void create_config_dir() {
@@ -141,7 +142,29 @@ void save_playlist(const std::vector<std::string>& playlist) {
     }
 }
 
+bool get_whitelist_mode() {
+    return ::ini_getbool("tune", "whitelist_mode", false, CONFIG_PATH);
+}
+
+void set_whitelist_mode(bool value) {
+    create_config_dir();
+    ::ini_putl("tune", "whitelist_mode", value, CONFIG_PATH);
+}
+
+bool get_title_whitelist(u64 tid) {
+    if (tid == 0) return false;
+    return ::ini_getbool("whitelist", get_tid_str(tid), false, WHITELIST_PATH);
+}
+
+void set_title_whitelist(u64 tid, bool value) {
+    if (tid == 0) return;
+    create_config_dir();
+    ::ini_putl("whitelist", get_tid_str(tid), value, WHITELIST_PATH);
+}
+
 } // namespace config
+
+
 
 
 

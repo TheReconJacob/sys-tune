@@ -47,6 +47,24 @@ tsl::elm::Element *MainGui::createUI() {
     });
     list->addItem(browser_button);
 
+    list->addItem(new tsl::elm::CategoryHeader("Settings"));
+
+    /* Whitelist mode toggle */
+    auto whitelist_mode = new tsl::elm::ToggleListItem("Whitelist Mode", config::get_whitelist_mode());
+    whitelist_mode->setStateChangedListener([](bool state) {
+        config::set_whitelist_mode(state);
+    });
+    list->addItem(whitelist_mode);
+
+    /* Whitelist current game toggle */
+    if (tid != 0) {
+        auto whitelist_game = new tsl::elm::ToggleListItem("Whitelist Current Game", config::get_title_whitelist(tid));
+        whitelist_game->setStateChangedListener([tid](bool state) {
+            config::set_title_whitelist(tid, state);
+        });
+        list->addItem(whitelist_game);
+    }
+
     /* Volume indicator */
     list->addItem(new tsl::elm::CategoryHeader("Volume Control"));
 
@@ -148,5 +166,6 @@ void MainGui::update() {
         this->m_status_bar->update();
     tick++;
 }
+
 
 

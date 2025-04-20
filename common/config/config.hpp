@@ -34,10 +34,17 @@ void set_title_enabled(u64 tid, bool value);
 bool get_title_enabled_default();
 void set_title_enabled_default(bool value);
 
+bool get_whitelist_mode();
+void set_whitelist_mode(bool value);
+
+bool get_title_whitelist(u64 tid);
+void set_title_whitelist(u64 tid, bool value);
+
 // New playlist functions
 std::vector<std::string> get_playlist();
 void save_playlist(const std::vector<std::string>& playlist);
 
 } // namespace config
+
 
 
