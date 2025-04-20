@@ -1,5 +1,11 @@
 # sys-tune
-## Background audio player for the Nintendo switch + Tesla overlay
+Forked from the original repo [here](https://github.com/HookedBehemoth/sys-tune)
+
+## new features
+This version does exactly the same as the original, with the following features added:
+- Playlists are now saved when restarting the switch
+- A new option appears in the menu, allowing your playlist to automatically start playing when you turn your switch on
+- Adds a whitelist mode, which does the opposite of blacklist, where a song ONLY plays when at a specific title id
 
 ## Installation
 1. Download the release zip from [here](https://github.com/HookedBehemoth/sys-tune/releases/latest)
@@ -7,19 +13,3 @@
 3. Put mp3, flac, wav or wave files to your sd card.
 
 You can manage playback via the Tesla overlay in the release.
-
-## Screenshots
-![Main](/sample/libtesla_1586882452.jpg)
-![Main](/sample/libtesla_1586882672.jpg)
-![Main](/sample/libtesla_1586882735.jpg)
-(Alpha values are wrong in these screenshots. The overlay will be less transparent.)
-
-## Special thanks to:
-- [mackron](http://mackron.github.io/) who made the awesome [audio decoders used here.](https://github.com/mackron/dr_libs/)
-- [WerWolv](https://werwolv.net/) for making libtesla, the UI library used for the control overlay.
-- [TotalJustice](https://github.com/ITotalJustice) for bug fixes, adding some features and bad code.
-
-## Info for developers
-I implemented an IPC interface accessible via service wrappers [here](/ipc/).
-
-My [Tesla overlay](/overlay/source/) uses these bindings.
