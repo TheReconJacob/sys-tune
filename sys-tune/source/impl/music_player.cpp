@@ -230,6 +230,20 @@ namespace tune::impl {
         g_playlist = playlist;
         g_shuffle_playlist = shuffle;
         g_current = current;
+        g_queue_position = 0;
+
+        // Load saved playlist
+        auto saved_paths = config::get_playlist();
+        for (const auto& path : saved_paths) {
+            if (sdmc::FileExists(path.c_str())) {
+                const PlaylistEntry new_entry{
+                    .path = path,
+                    .id = static_cast<PlaylistID>(g_playlist->size())
+                };
+                g_playlist->push_back(new_entry);
+                g_shuffle_playlist->push_back(new_entry.id);
+            }
+        }
 
         // tldr, most fancy things made by N will fatal
         const u64 blacklist[] = {
@@ -309,6 +323,16 @@ namespace tune::impl {
     }
 
     void Exit() {
+        // Save playlist before exit
+        if (g_playlist) {
+            std::vector<std::string> paths;
+            paths.reserve(g_playlist->size());
+            for (const auto& entry : *g_playlist) {
+                paths.push_back(entry.path);
+            }
+            config::save_playlist(paths);
+        }
+
         g_should_run = false;
     }
 
@@ -438,6 +462,10 @@ namespace tune::impl {
     }
 
     void PmdmntThreadFunc(void *ptr) {
+        // Load and apply the autoplay setting from config
+        bool autoplay_enabled = config::get_autoplay_enabled();
+        g_should_pause = !autoplay_enabled;  // Set initial pause state based on autoplay setting
+
         while (g_should_run) {
             u64 pid{}, new_tid{};
             if (pm::PollCurrentPidTid(&pid, &new_tid)) {
@@ -451,25 +479,18 @@ namespace tune::impl {
                     SetTitleVolume(std::clamp(config::get_title_volume(new_tid), 0.f, VOLUME_MAX));
                 }
 
-                // TODO: fade song in rather than abruptly playing to avoid jump scares
-                if (config::has_title_enabled(new_tid)) {
-                    g_should_pause = !config::get_title_enabled(new_tid);
+                // Only check title-specific settings if autoplay is enabled
+                if (autoplay_enabled) {
+                    if (config::has_title_enabled(new_tid)) {
+                        g_should_pause = !config::get_title_enabled(new_tid);
+                    } else {
+                        g_should_pause = !config::get_title_enabled_default();
+                    }
                 } else {
-                    g_should_pause = !config::get_title_enabled_default();
+                    g_should_pause = true;  // Always pause if autoplay is disabled
                 }
             }
-
-            // sadly, we can't simply apply auda when the title changes
-            // as it seems to apply to quickly, before the title opens audio
-            // services, so the changes don't apply.
-            // best option is to repeatdly set the out :/
-            if (pid) {
-                const auto v = g_use_title_volume ? g_title_volume : g_default_title_volume;
-                audWrapperSetProcessMasterVolume(pid, 0, v);
-                // audWrapperSetProcessRecordVolume(pid, 0, v);
-            }
-
-            svcSleepThread(10'000'000);
+            svcSleepThread(100'000'000ul);
         }
     }
 
@@ -721,6 +742,14 @@ namespace tune::impl {
         const auto shuffle_index = (shuffle_playlist_size > 1) ? (randomGet64() % shuffle_playlist_size) : 0;
         g_shuffle_playlist->emplace(g_shuffle_playlist->cbegin() + shuffle_index, playlist_id);
 
+        // Save playlist to file
+        std::vector<std::string> paths;
+        paths.reserve(g_playlist->size());
+        for (const auto& entry : *g_playlist) {
+            paths.push_back(entry.path);
+        }
+        config::save_playlist(paths);
+
         // increase playlist counter
         playlist_id++;
 
@@ -768,3 +797,7 @@ namespace tune::impl {
     }
 
 }
+
+
+
+

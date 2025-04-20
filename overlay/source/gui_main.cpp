@@ -89,6 +89,16 @@ tsl::elm::Element *MainGui::createUI() {
 
     list->addItem(new tsl::elm::CategoryHeader("Play / Pause"));
 
+    /* Autoplay on boot toggle */
+    auto tune_autoplay = new tsl::elm::ToggleListItem("Autoplay on boot", config::get_autoplay_enabled(), "On", "Off");
+    tune_autoplay->setStateChangedListener([](bool new_value) {
+        config::set_autoplay_enabled(new_value);
+        if (new_value) {
+            tunePlay();
+        }
+    });
+    list->addItem(tune_autoplay);
+
     /* Per title tune toggle. */
     auto tune_play = new tsl::elm::ToggleListItem("Tune", config::get_title_enabled(tid), "Play", "Pause");
     tune_play->setStateChangedListener([tid](bool new_value) {
@@ -138,3 +148,5 @@ void MainGui::update() {
         this->m_status_bar->update();
     tick++;
 }
+
+
