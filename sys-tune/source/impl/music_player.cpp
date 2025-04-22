@@ -477,16 +477,26 @@ namespace tune::impl {
 
                 if (new_tid != 0) {  // Only process if we have a valid title ID
                     if (whitelist_mode) {
-                        // In whitelist mode, close audio unless explicitly whitelisted
+                        // In whitelist mode, check if this title is whitelisted
                         bool is_whitelisted = config::get_title_whitelist(new_tid);
-                        g_close_audren = !is_whitelisted;
-                        g_should_pause = !is_whitelisted;
+                        
+                        // Also check home menu/qlaunch as a fallback
+                        bool home_whitelisted = config::get_title_whitelist(0x0100000000001000);
+                        
+                        // If either current title or home menu is whitelisted, apply whitelist rules
+                        if (is_whitelisted || home_whitelisted) {
+                            g_close_audren = !is_whitelisted;
+                            g_should_pause = !is_whitelisted;
+                        } else {
+                            // If nothing relevant is whitelisted, behave as if whitelist mode is off
+                            g_close_audren = false;
+                            g_should_pause = !autoplay_enabled;
+                        }
                     } else {
-                        // In blacklist mode (default), only close if blacklisted
+                        // Blacklist mode behavior remains the same
                         bool is_blacklisted = config::get_title_blacklist(new_tid);
                         g_close_audren = is_blacklisted;
                         
-                        // Check title-specific settings only if autoplay is enabled
                         if (autoplay_enabled) {
                             if (config::has_title_enabled(new_tid)) {
                                 g_should_pause = !config::get_title_enabled(new_tid);
@@ -810,6 +820,7 @@ namespace tune::impl {
     }
 
 }
+
 
 
 
